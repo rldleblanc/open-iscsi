@@ -1185,7 +1185,9 @@ do_target_discovery(discovery_rec_t *drec, struct list_head *ifaces,
 	int rc, host_no;
 	struct iscsi_transport *t;
 
+	printf("Starting do_target_discovery\n");
 	if (list_empty(ifaces)) {
+		printf("No ifaces\n");
 		ifaces = NULL;
 		goto sw_discovery;
 	}
@@ -1223,6 +1225,7 @@ do_target_discovery(discovery_rec_t *drec, struct list_head *ifaces,
 
 		if (drec->type ==  DISCOVERY_TYPE_SENDTARGETS)
 			if (t->caps & CAP_SENDTARGETS_OFFLOAD) {
+				printf("Calling do_offload_sendtargets\n");
 				do_offload_sendtargets(drec, host_no, do_login);
 				list_del(&iface->list);
 				free(iface);
@@ -1233,6 +1236,7 @@ do_target_discovery(discovery_rec_t *drec, struct list_head *ifaces,
 		return ISCSI_ERR_NO_OBJS_FOUND;
 
 sw_discovery:
+	printf("Doing software discovery\n");
 	switch (drec->type) {
 	case DISCOVERY_TYPE_SENDTARGETS:
 		return do_software_sendtargets(drec, ifaces, info_level,

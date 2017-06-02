@@ -2398,7 +2398,9 @@ int idbm_bind_ifaces_to_nodes(idbm_disc_nodes_fn *disc_node_fn,
 
 	INIT_LIST_HEAD(&def_ifaces);
 
+	printf("Starting idbm_bind_ifaces_to_nodes\n");
 	if (!ifaces || list_empty(ifaces)) {
+		printf("Empty ifaces, using default\n");
 		iface_link_ifaces(&def_ifaces);
 
 		list_for_each_entry_safe(iface, tmp_iface, &def_ifaces, list) {
@@ -2432,7 +2434,9 @@ int idbm_bind_ifaces_to_nodes(idbm_disc_nodes_fn *disc_node_fn,
 							&def_iface, bound_recs);
 		}
 	} else {
+		printf("Have some ifaces\n");
 		list_for_each_entry(iface, ifaces, list) {
+			printf("iface: %s\n", iface->name);
 			if (strcmp(iface->name, DEFAULT_IFACENAME) &&
 			    !iface_is_valid(iface)) {
 				log_error("iface %s is not valid. Will not "

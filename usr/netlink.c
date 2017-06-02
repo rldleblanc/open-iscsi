@@ -857,6 +857,17 @@ ktransport_ep_connect(iscsi_conn_t *conn, int non_blocking)
 	iface_rec_t *tmp_iface = (iface_rec_t *)&tmp_rec->iface;
 
 	log_debug(7, "in %s", __FUNCTION__);
+	printf("ktransport_ep_connect, id: %d\n", conn->id);
+	printf("ktransport_ep_connect, conn->session_ptr: %p\n", conn->session);
+	printf("ktransport_ep_connect, session_ptr: %p\n", tmp_session);
+	printf("ktransport_ep_connect, netdev: %s\n", tmp_session->netdev);
+	printf("ktransport_ep_connect, initiatorname: %s\n", tmp_session->initiator_name);
+	printf("ktransport_ep_connect, targetname: %s\n", tmp_session->target_name);
+	printf("ktransport_ep_connect, rec_ptr: %p\n", tmp_rec);
+	printf("ktransport_ep_connect, rec_name: %s\n", tmp_rec->name);
+	printf("ktransport_ep_connect, iface: %s\n", tmp_iface->name);
+	printf("ktransport_ep_connect, ipaddress: %s\n", tmp_iface->ipaddress);
+	printf("ktransport_ep_connect, transport_name: %s\n", tmp_iface->transport_name);
 
 	memset(setparam_buf, 0, NLM_SETPARAM_DEFAULT_MAX);
 	ev = (struct iscsi_uevent *)setparam_buf;
@@ -871,6 +882,11 @@ ktransport_ep_connect(iscsi_conn_t *conn, int non_blocking)
 		ev->u.ep_connect.non_blocking = non_blocking;
 	}
 
+	//if (dst_addr->sa_family == PF_INET)
+	//	addrlen = sizeof(struct sockaddr_in);
+	//else if (dst_addr->sa_family == PF_INET6)
+	//	addrlen = sizeof(struct sockaddr_in6);
+	//else {
 	if (dst_addr->ss_family != AF_INET && dst_addr->ss_family != AF_INET6) {
 		log_error("%s unknown addr family %d",
 			 __FUNCTION__, dst_addr->ss_family);
@@ -878,6 +894,8 @@ ktransport_ep_connect(iscsi_conn_t *conn, int non_blocking)
 	}
 	memcpy(setparam_buf + sizeof(*ev), dst_addr, addrlen);
 	iface_copy(setparam_buf + sizeof(*ev) + addrlen, tmp_iface);
+	//memcpy(setparam_buf + sizeof(*ev) + addrlen, tmp_iface,
+	//       sizeof(iface_rec_t));
 
 	iov[1].iov_base = ev;
 	iov[1].iov_len = sizeof(*ev) + addrlen + sizeof(iface_rec_t);
