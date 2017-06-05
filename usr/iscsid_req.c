@@ -108,6 +108,7 @@ int iscsid_request(int *fd, iscsiadm_req_t *req, int start_iscsid)
 	int err;
 
 	err = iscsid_connect(fd, start_iscsid);
+	printf("iscsid_connect returned with %d\n", err);
 	if (err)
 		return err;
 
@@ -117,6 +118,7 @@ int iscsid_request(int *fd, iscsiadm_req_t *req, int start_iscsid)
 		close(*fd);
 		return ISCSI_ERR_ISCSID_COMM_ERR;
 	}
+	printf("iscsid_write successful\n");
 	return ISCSI_SUCCESS;
 }
 
@@ -190,6 +192,8 @@ int iscsid_req_wait(iscsiadm_cmd_e cmd, int fd)
 int iscsid_req_by_rec_async(iscsiadm_cmd_e cmd, node_rec_t *rec, int *fd)
 {
 	iscsiadm_req_t req;
+	printf("Running iscsid_req_by_rec_async\n");
+	printf("command %d on iface %s with fd %d\n", cmd, rec->iface.name, &fd);
 
 	memset(&req, 0, sizeof(iscsiadm_req_t));
 	req.command = cmd;

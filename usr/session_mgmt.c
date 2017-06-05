@@ -82,7 +82,9 @@ static int iscsid_login_reqs_wait(struct list_head *list)
 		int err;
 
 		rec = curr->data;
+		printf("Calling iscsid_req_wait with fd %d\n", curr->fd);
 		err = iscsid_req_wait(MGMT_IPC_SESSION_LOGIN, curr->fd);
+		printf("iscsid_req_wait returned with err %d\n", err);
 		if (err && !ret)
 			ret = err;
 		log_login_msg(rec, err);
@@ -130,6 +132,7 @@ __iscsi_login_portal(void *data, struct list_head *list, struct node_rec *rec)
 	else
 		rc = iscsid_req_by_rec(MGMT_IPC_SESSION_LOGIN, rec);
 
+	printf("iscsid_req_by_rec* rc: %d\n", rc);
 	if (rc) {
 		log_login_msg(rec, rc);
 		if (async_req)
@@ -160,17 +163,21 @@ int iscsi_login_portal(void *data, struct list_head *list, struct node_rec *rec)
 	struct node_rec *pattern_rec = data;
 	int rc = 0, session_count = 0, i;
 
+	printf("Running iscsi_login_portal\n");
 	/*
 	 * If pattern_rec->session.multiple is set, just add a single new
 	 * session by passing things along to __iscsi_login_portal
 	 */
-	if (pattern_rec && pattern_rec->session.multiple)
+	if (pattern_rec && pattern_rec->session.multiple) {
+		printf("Running __iscsi_login_portal\n");
 		return __iscsi_login_portal(data, list, rec);
+	}
 
 	/*
 	 * Count the current number of sessions, and only create those
 	 * that are missing.
 	 */
+	printf("Running iscsi_sysfs_for_each_session\n");
 	rc = iscsi_sysfs_for_each_session(rec, &session_count,
 					  iscsi_match_session_count, 0);
 	if (rc) {
@@ -195,10 +202,12 @@ int iscsi_login_portal(void *data, struct list_head *list, struct node_rec *rec)
 	for (i = session_count; i < rec->session.nr_sessions; ++i) {
 		log_debug(1, "%s: Creating session %d/%d", rec->iface.name,
 			  i + 1, rec->session.nr_sessions);
+		printf("Calling __iscsi_login_portal\n");
 		int err = __iscsi_login_portal(pattern_rec, list, rec);
 		if (err && !rc)
 			rc = err;
 	}
+	printf("Successfully completed iscsi_login_portal with rc: %d\n", rc);
 
 done:
 	return rc;
@@ -251,16 +260,20 @@ int __iscsi_login_portals(void *data, int *nr_found, int wait,
 
 	list_for_each_entry(curr_rec, rec_list, list) {
 		err = login_fn(data, &login_list, curr_rec);
+		printf("login_fn ret %d\n", err);
 		if (err > 0 && !ret)
 			ret = err;
 		if (!err)
 			(*nr_found)++;
 	}
 	if (wait) {
+		printf("Waiting for logins...\n");
 		err = iscsid_login_reqs_wait(&login_list);
+		printf("iscsid_login_reqs_wait ret %d\n", err);
 		if (err && !ret)
 			ret = err;
 	} else
+		printf("Not waiting for logins\n");
 		iscsid_reqs_close(&login_list);
 
 	if (clear_list) {

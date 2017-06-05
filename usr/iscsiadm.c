@@ -689,6 +689,7 @@ static int login_portals(struct node_rec *pattern_rec)
 	int nr_found, rc, err;
 
 	INIT_LIST_HEAD(&rec_list);
+	printf("Calling for_each_matched_rec\n");
 	err = for_each_matched_rec(pattern_rec, &rec_list, link_recs);
 	if (err == ISCSI_ERR_NO_OBJS_FOUND)
 		return err;
@@ -698,8 +699,10 @@ static int login_portals(struct node_rec *pattern_rec)
 	rc = err;
 	/* if there is an err but some recs then try to login to what we have */
 
+	printf("Calling iscsi_login_portals\n");
 	err = iscsi_login_portals(pattern_rec, &nr_found, 1, &rec_list,
 				  iscsi_login_portal);
+	printf("Returned from iscsi_login_portals with %d\n", err);
 	if (err)
 		log_error("Could not log into all portals");
 
@@ -2584,6 +2587,7 @@ static int exec_node_op(int op, int do_login, int do_logout,
 	}
 
 	if (do_login) {
+		printf("Calling do_login\n");
 		rc = login_portals(rec);
 		goto out;
 	}
@@ -3597,16 +3601,19 @@ main(int argc, char **argv)
 			goto out;
 		}
 
+		printf("node: do_login_all\n");
 		if (do_login_all) {
 			rc = login_by_startup(group_session_mgmt_mode);
 			goto out;
 		}
 
+		printf("node: do_logout_all\n");
 		if (do_logout_all) {
 			rc = logout_by_startup(group_session_mgmt_mode);
 			goto out;
 		}
 
+		printf("node: !list_empty(&ifaces)\n");
 		if (!list_empty(&ifaces)) {
 			iface = list_entry(ifaces.next, struct iface_rec,
 					   list);
@@ -3618,15 +3625,18 @@ main(int argc, char **argv)
 					  iface->hwaddress, iface->ipaddress);
 		}
 
+		printf("node: ISCSI_LISTEN_PORT\n");
 		if (ip && port == -1)
 			port = ISCSI_LISTEN_PORT;
 
+		printf("node: idbm_create_rec\n");
 		rec = idbm_create_rec(targetname, tpgt, ip, port, iface, 1);
 		if (!rec) {
 			rc = ISCSI_ERR_NOMEM;
 			goto out;
 		}
 
+		printf("node: exec_node_op\n");
 		rc = exec_node_op(op, do_login, do_logout, do_show,
 				  do_rescan, do_stats, info_level, rec,
 				  &params);
