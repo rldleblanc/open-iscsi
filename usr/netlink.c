@@ -848,12 +848,19 @@ krecv_pdu_end(struct iscsi_conn *conn)
 int
 ktransport_ep_connect(iscsi_conn_t *conn, int non_blocking)
 {
-	int rc, addrlen;
+	int rc, addrlen, err = 0;
 	struct iscsi_uevent *ev;
 	struct sockaddr *dst_addr = (struct sockaddr *)&conn->saddr;
+	struct sockaddr_storage *src_addr = malloc(sizeof(struct sockaddr_storage));
 	struct iovec iov[2];
+	char *ipaddr = ((struct iscsi_session *)conn->session)->nrec.iface.ipaddress;
 
 	log_debug(7, "in %s", __FUNCTION__);
+
+	if (!src_addr) {
+		err = -ENOMEM;
+		goto cleanup;
+	}
 
 	memset(setparam_buf, 0, NLM_SETPARAM_DEFAULT_MAX);
 	ev = (struct iscsi_uevent *)setparam_buf;
@@ -868,19 +875,49 @@ ktransport_ep_connect(iscsi_conn_t *conn, int non_blocking)
 		ev->u.ep_connect.non_blocking = non_blocking;
 	}
 
-	if (dst_addr->sa_family == PF_INET)
+	if (strlen(ipaddr)) {
+		rc = resolve_address(ipaddr, NULL, src_addr);
+		if (rc) {
+			log_error("%s invalid source IP address", ipaddr);
+			err = -EINVAL;
+			goto cleanup;
+		}
+	}
+	if (dst_addr->sa_family == PF_INET) {
 		addrlen = sizeof(struct sockaddr_in);
-	else if (dst_addr->sa_family == PF_INET6)
+		if (src_addr->ss_family && src_addr->ss_family != AF_INET) {
+			log_error("Destination address is not the same family as source address");
+			err = -EINVAL;
+			goto cleanup;
+		}
+	} else if (dst_addr->sa_family == PF_INET6) {
 		addrlen = sizeof(struct sockaddr_in6);
-	else {
+		if (src_addr->ss_family && src_addr->ss_family != AF_INET6) {
+			log_error("Destination address is not the same family as source adderss");
+			err = -EINVAL;
+			goto cleanup;
+		}
+	} else {
 		log_error("%s unknown addr family %d",
 			 __FUNCTION__, dst_addr->sa_family);
-		return -EINVAL;
+		err = -EINVAL;
+		goto cleanup;
 	}
 	memcpy(setparam_buf + sizeof(*ev), dst_addr, addrlen);
 
 	iov[1].iov_base = ev;
 	iov[1].iov_len = sizeof(*ev) + addrlen;
+	if (src_addr->ss_family) {
+		memcpy(setparam_buf + sizeof(*ev) + addrlen, src_addr,
+		       sizeof(struct sockaddr_storage));
+		iov[1].iov_len += sizeof(struct sockaddr_storage);
+	}
+
+cleanup:
+	free(src_addr);
+	if (err)
+		return err;
+
 	rc = __kipc_call(iov, 2);
 	if (rc < 0)
 		return rc;
