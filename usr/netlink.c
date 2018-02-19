@@ -862,6 +862,7 @@ ktransport_ep_connect(iscsi_conn_t *conn, int non_blocking)
 		goto cleanup;
 	}
 
+	memset(src_addr, 0, sizeof(struct sockaddr_storage));
 	memset(setparam_buf, 0, NLM_SETPARAM_DEFAULT_MAX);
 	ev = (struct iscsi_uevent *)setparam_buf;
 	ev->transport_handle = conn->session->t->handle;
